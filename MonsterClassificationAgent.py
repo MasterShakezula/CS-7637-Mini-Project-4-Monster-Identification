@@ -1,24 +1,49 @@
 class MonsterClassificationAgent:
     def __init__(self):
         #If you want to do any initial processing, add it here.
-        self.positives = {}
-        self.negatives = {}
         pass
 
     def solve(self, samples, new_monster):
         #Populate positive/negative entries if they are empty.
-        if not self.positives and not self.negatives:
-            self.cache_positive_negatives(samples)
+        positives, negatives = self.get_positive_negative(samples)
             
         #Base case. 
         #Perhaps A monster happens to have the same features as another case seen before.
-        if any (new_monster == monster for monster in self.positives.values()):
+        if any (new_monster == monster for monster in positives):
             return True
-        elif any (new_monster == monster for monster in self.negatives.values()):
+        if any (new_monster == monster for monster in negatives):
             return False
-        #Find the difference in distance between our new monster, and existing positives.
+        #Compare average difference in a quantified "distance" number, of how different
+        #our new monster is to our positive groups, versus out negative groups
+        #smaller diff = more similar. 
+        #If more similar to positives, return true. If more similar to negatives, return false.
+        average_pos_distance = self.find_avg_diff_dist(new_monster, positives)
+        average_neg_distance = self.find_avg_diff_dist(new_monster, negatives)
         
         
+        #More likely a match(?)
+        if average_pos_distance < average_neg_distance:
+            print("Avg Positive Distance: ", average_pos_distance)
+            return True
+        elif average_neg_distance < average_pos_distance:
+            print("Avg Negative Distance: ", average_neg_distance)
+            return False
+            
+        #Edge case, avg distance are the same. Check local case differences. 
+        closest_local_positive = self.find_closest_dist(new_monster, positives)
+        closest_local_negative = self.find_closest_dist(new_monster, negative)
+        
+        return closest_local_positive <= closest_local_negative #same distance, resolve this edge case.
+        
+    def get_positive_negative(self, samples):
+        positives = []
+        negatives = []
+        for monster_traits, is_positive in samples:
+            if is_positive:
+                positives.append(monster_traits)
+            else:
+                negatives.append(monster_traits)
+        return positives,negatives
         
         #Add your code here!
         #
@@ -33,29 +58,39 @@ class MonsterClassificationAgent:
         #monster is an instance of the same species as that represented by the list.
         pass
     
-    def cache_positive_negatives(self, samples):
-        for monster_dict, is_positive in samples:
-            if (is_positive):
-                self.positives[len(self.positives)] = monster_dict
-            else:
-                self.negatives[len(self.negatives)] = monster_dict
-        print(self.positives)
+    def find_avg_diff_dist(self, target_monster, monsters):
+        if not monsters:
+            return 1
+        total_diff_dist = 0.0
+        for monster in monsters:
+            total_diff_dist += self.distance_difference(target_monster, monster)
+        return total_diff_dist/len(monsters)
         
         
-    def find_closest_positive(self, target_monster, positives, negatives):
-        closest_match = None
+    def find_closest_dist(self, target_monster, monsters):
+        if not monsters:
+            return 1.0
         smallest_diff = None
-        for entry in positives:
-            diff = self.distance_difference(target, entry)
+        for monster in monsters:
+            diff = self.distance_difference(target_monster, monster)
             if diff < smallest_diff:
                 smallest_diff = diff
-                closest_match = entry
-                
-    def find_closest_negative(self, target_monster, negatives):
-        closest_match = None
-        smallest_diff = None
-        for entry in negatives:
-            diff = self.distance_difference(target, entry)
-            if diff < smallest_diff
-            smallest_diff = diff
-            closest_match = entry
+        return smallest_diff
+    
+            
+            
+    def distance_difference(self, target, entry):
+        #find sum of difference for keys present in both dictionaryies.
+        all_traits = set(target.keys())
+        
+        #distance, for now, is normalized and weightless.
+        #each commonality will be a point. 
+        #For later, maybe see if different traits have a greater/lesser weight/impact on true/false
+        similarity = 0
+        for trait in all_traits:
+            if target[trait] == entry[trait]:
+                similarity += 1
+        similarity = similarity/len(all_traits) #normalize.
+        dist = 1.0-similarity
+        print("Dist: ", dist)
+        return dist
