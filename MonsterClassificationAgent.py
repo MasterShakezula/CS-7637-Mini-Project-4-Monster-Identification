@@ -1,3 +1,8 @@
+#This agent is using case-based reasoning (CBR) and difference distancing.
+#I calculate, quantitatively, the difference between a monster, versus old cases. And take the avg.
+#But right now, I don't weigh any of the unique traits. 
+#I will try to add this consideration.
+
 class MonsterClassificationAgent:
     def __init__(self):
         #If you want to do any initial processing, add it here.
@@ -12,6 +17,13 @@ class MonsterClassificationAgent:
         if any (new_monster == monster for monster in positives):
             return True
         if any (new_monster == monster for monster in negatives):
+            return False
+            
+        weight = self.get_trait_weight(positives, negatives, new_monster)
+        
+        if weight > 0:
+            return True
+        if weight < 0:
             return False
         #Compare average difference in a quantified "distance" number, of how different
         #our new monster is to our positive groups, versus out negative groups
@@ -34,6 +46,9 @@ class MonsterClassificationAgent:
         closest_local_negative = self.find_closest_dist(new_monster, negative)
         
         return closest_local_positive <= closest_local_negative #same distance, resolve this edge case.
+        
+        
+        
         
     def get_positive_negative(self, samples):
         positives = []
@@ -77,7 +92,20 @@ class MonsterClassificationAgent:
                 smallest_diff = diff
         return smallest_diff
     
+    def get_trait_weight(self, positives, negatives, new_monster):
+        weight = 0
+        
+        for trait, value in new_monster.items():
+            positive_values = {mon[trait] for mon in positives}
+            negative_values = {mon[trait] for mon in negatives}
             
+            #check trait values in one group, but not the other. This contributes to weight
+            if value in positive_values and value not in negative_values:
+                weight += 1
+            elif value in negative_values and value not in positive_values:
+                weight -=1
+                
+            return weight
             
     def distance_difference(self, target, entry):
         #find sum of difference for keys present in both dictionaryies.
