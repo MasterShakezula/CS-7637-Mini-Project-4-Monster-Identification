@@ -43,7 +43,7 @@ class MonsterClassificationAgent:
             
         #Edge case, avg distance are the same. Check local case differences. 
         closest_local_positive = self.find_closest_dist(new_monster, positives)
-        closest_local_negative = self.find_closest_dist(new_monster, negative)
+        closest_local_negative = self.find_closest_dist(new_monster, negatives)
         
         return closest_local_positive <= closest_local_negative #same distance, resolve this edge case.
         
@@ -105,7 +105,7 @@ class MonsterClassificationAgent:
             elif value in negative_values and value not in positive_values:
                 weight -=1
                 
-            return weight
+        return weight
             
     def distance_difference(self, target, entry):
         #find sum of difference for keys present in both dictionaryies.
